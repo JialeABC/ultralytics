@@ -786,6 +786,7 @@ class BaseTrainer:
     def check_resume(self, overrides):
         """Check if resume checkpoint exists and update arguments accordingly."""
         resume = self.args.resume
+        # resume = "runs/detect/train/weights/last.pt"
         if resume:
             try:
                 exists = isinstance(resume, (str, Path)) and Path(resume).exists()
@@ -817,6 +818,7 @@ class BaseTrainer:
 
     def _load_checkpoint_state(self, ckpt):
         """Load optimizer, scaler, EMA, and best_fitness from checkpoint."""
+        # ckpt = torch.load("runs/detect/train/weights/last.pt")
         if ckpt.get("optimizer") is not None:
             self.optimizer.load_state_dict(ckpt["optimizer"])
         if ckpt.get("scaler") is not None:

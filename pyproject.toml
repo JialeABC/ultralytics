@@ -18,6 +18,16 @@
 # Documentation:
 # For comprehensive documentation and usage instructions, visit: https://docs.ultralytics.com
 
+
+[tool.poetry]
+name = "ultralytics"
+version = "2.2.1"  # 确保你添加了版本号
+description = "A simple example project"
+authors = ["Lijiale <lijiale24a@nudt.edu.cn>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"  # 你的 Python 版本要求
+
 [build-system]
 requires = ["setuptools>=70.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
@@ -191,3 +201,5 @@ in-place = true
 [tool.codespell]
 ignore-words-list = "crate,nd,ned,strack,dota,ane,segway,fo,gool,winn,commend,bloc,nam,afterall"
 skip = '*.pt,*.pth,*.torchscript,*.onnx,*.tflite,*.pb,*.bin,*.param,*.mlmodel,*.engine,*.npy,*.data*,*.csv,*pnnx*,*venv*,*translat*,__pycache__*,*.ico,*.jpg,*.png,*.mp4,*.mov,/runs,/.git,./docs/??/*.md,./docs/mkdocs_??.yml'
+
+

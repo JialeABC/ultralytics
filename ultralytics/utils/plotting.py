@@ -97,7 +97,7 @@ class Colors:
         hexs = (
             "042AFF",
             "0BDBEB",
-            "F3F3F3",
+            "A2FF0B",
             "00DFB7",
             "111F68",
             "FF6FDD",
@@ -114,7 +114,7 @@ class Colors:
             "7B0068",
             "FF1B6C",
             "FC6D2F",
-            "A2FF0B",
+            "F3F3F3",
         )
         self.palette = [self.hex2rgb(f"#{c}") for c in hexs]
         self.n = len(self.palette)
@@ -202,7 +202,8 @@ class Annotator:
         non_ascii = not is_ascii(example)  # non-latin labels, i.e. asian, arabic, cyrillic
         input_is_pil = isinstance(im, Image.Image)
         self.pil = pil or non_ascii or input_is_pil
-        self.lw = line_width or max(round(sum(im.size if input_is_pil else im.shape) / 2 * 0.003), 2)
+        # self.lw = line_width or max(round(sum(im.size if input_is_pil else im.shape) / 2 * 0.003), 2)
+        self.lw = 1
         if not input_is_pil:
             if im.shape[2] == 1:  # handle grayscale
                 im = cv2.cvtColor(im, cv2.COLOR_GRAY2BGR)

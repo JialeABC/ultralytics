@@ -9,9 +9,9 @@
 #     └── coco ← downloads here (20.1 GB)
 
 # Train/val/test sets as 1) dir: path/to/imgs, 2) file: path/to/imgs.txt, or 3) list: [path/to/imgs1, path/to/imgs2, ..]
-path: D:/Deeplearning_code/ultralytics-main/data_txt # dataset root dir
-train: vis_train_sobel.txt # train images (relative to 'path') 118287 images
-val: vis_val_sobel.txt # val images (relative to 'path') 5000 images
+path: D:/Deeplearning_code/yolov8/ultralytics/data_txt # dataset root dir
+train: vis_train.txt # train images (relative to 'path') 118287 images
+val: inf_val.txt # val images (relative to 'path') 5000 images
 test: test.txt # 20288 of 40670 images, submit to https://competitions.codalab.org/competitions/20794
 
 # Classes

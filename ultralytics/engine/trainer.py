@@ -786,7 +786,7 @@ class BaseTrainer:
     def check_resume(self, overrides):
         """Check if resume checkpoint exists and update arguments accordingly."""
         resume = self.args.resume
-        # resume = "runs/detect/train/weights/last.pt"
+        # resume = "runs/detect/train2/weights/last.pt"
         if resume:
             try:
                 exists = isinstance(resume, (str, Path)) and Path(resume).exists()
@@ -862,6 +862,7 @@ class BaseTrainer:
 
     def resume_training(self, ckpt):
         """Resume YOLO training from given epoch and best fitness."""
+        # ckpt = torch.load('runs/detect/train2/weights/last.pt')
         if ckpt is None or not self.resume:
             return
         start_epoch = ckpt.get("epoch", -1) + 1

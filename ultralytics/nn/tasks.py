@@ -11,6 +11,11 @@ import torch
 import torch.nn as nn
 
 from ultralytics.nn.autobackend import check_class_names
+import matplotlib.pyplot as plt
+import numpy as np
+
+from ultralytics.nn.extra_modules.block import Downsample,SPDConv,Dual_Grad_SPD
+from ultralytics.nn.extra_modules.domain_generalization import domain_agnostic, style_transform
 from ultralytics.nn.modules import (
     AIFI,
     C1,
@@ -1342,9 +1347,9 @@ def temporary_modules(modules=None, attributes=None):
         attributes (dict, optional): A dictionary mapping old module attributes to new module attributes.
 
     Examples:
-        >>> with temporary_modules({"old.module": "new.module"}, {"old.module.attribute": "new.module.attribute"}):
-        >>> import old.module  # this will now import new.module
-        >>> from old.module import attribute  # this will now import new.module.attribute
+        # >>> with temporary_modules({"old.module": "new.module"}, {"old.module.attribute": "new.module.attribute"}):
+        # >>> import old.module  # this will now import new.module
+        # >>> from old.module import attribute  # this will now import new.module.attribute
 
     Note:
         The changes are only in effect inside the context manager and are undone once the context manager exits.
@@ -1610,6 +1615,11 @@ def parse_model(d, ch, verbose=True):
             SCDown,
             C2fCIB,
             A2C2f,
+            Downsample,
+            SPDConv,
+            Dual_Grad_SPD,
+            domain_agnostic,
+            style_transform
         }
     )
     repeat_modules = frozenset(  # modules with 'repeat' arguments
@@ -1646,11 +1656,16 @@ def parse_model(d, ch, verbose=True):
         n = n_ = max(round(n * depth), 1) if n > 1 else n  # depth gain
         if m in base_modules:
             c1, c2 = ch[f], args[0]
-            if c2 != nc:  # if c2 not equal to number of classes (i.e. for Classify() output)
+
+            if m == style_transform:
+                pass
+            elif c2 != nc:  # if c2 not equal to number of classes (i.e. for Classify() output)
                 c2 = make_divisible(min(c2, max_channels) * width, 8)
             if m is C2fAttn:  # set 1) embed channels and 2) num heads
                 args[1] = make_divisible(min(args[1], max_channels // 2) * width, 8)
                 args[2] = int(max(round(min(args[2], max_channels // 2 // 32)) * width, 1) if args[2] > 1 else args[2])
+
+
 
             args = [c1, c2, *args[1:]]
             if m in repeat_modules:

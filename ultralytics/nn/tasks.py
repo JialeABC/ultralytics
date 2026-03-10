@@ -93,6 +93,7 @@ from ultralytics.utils.torch_utils import (
     time_sync,
 )
 
+from ultralytics.nn.extra_modules.domain_generalization import style_transform
 
 class BaseModel(torch.nn.Module):
     """
@@ -1610,6 +1611,7 @@ def parse_model(d, ch, verbose=True):
             SCDown,
             C2fCIB,
             A2C2f,
+            style_transform
         }
     )
     repeat_modules = frozenset(  # modules with 'repeat' arguments

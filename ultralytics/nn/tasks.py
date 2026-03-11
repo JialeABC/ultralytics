@@ -336,6 +336,8 @@ class BaseModel(torch.nn.Module):
             self.criterion = self.init_criterion()
 
         if preds is None:
+            transform_image = self.preprocess(batch["img"])
+            batch["img"] = transform_image
             preds = self.forward(batch["img"])
         return self.criterion(preds, batch)
 
@@ -401,6 +403,7 @@ class DetectionModel(BaseModel):
         self.names = {i: f"{i}" for i in range(self.yaml["nc"])}  # default names dict
         self.inplace = self.yaml.get("inplace", True)
         self.end2end = getattr(self.model[-1], "end2end", False)
+        self.preprocess = style_transform()
 
         # Build strides
         m = self.model[-1]  # Detect()

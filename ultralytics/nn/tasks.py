@@ -11,6 +11,16 @@ import torch
 import torch.nn as nn
 
 from ultralytics.nn.autobackend import check_class_names
+import matplotlib.pyplot as plt
+import numpy as np
+from ultralytics.nn.extra_modules.domain_generalization import compute_feature_consistency_loss,EntropyHead, SimpleConsistencyFusion, visualize_feature_map
+from ultralytics.nn.extra_modules.domain_generalization import ConstrainedY2IR
+from torchvision import transforms
+import os
+from ultralytics.nn.extra_modules.domain_generalization import compute_triple_loss, compute_entropy_loss
+
+from ultralytics.nn.extra_modules.block import Downsample,SPDConv,Dual_Grad_SPD
+from ultralytics.nn.extra_modules.domain_generalization import domain_agnostic, style_transform,FDM, SPD_CBAM_Block
 from ultralytics.nn.modules import (
     AIFI,
     C1,
@@ -93,7 +103,6 @@ from ultralytics.utils.torch_utils import (
     time_sync,
 )
 
-from ultralytics.nn.extra_modules.domain_generalization import style_transform
 
 class BaseModel(torch.nn.Module):
     """
@@ -170,22 +179,90 @@ class BaseModel(torch.nn.Module):
         Returns:
             (torch.Tensor): The last output of the model.
         """
+        x_aug = None
+        if isinstance(x, list):
+            img, x_aug = x[0], x[1]
+            x = img
+            y_aug = []
+            tloss_feature_consistency = torch.tensor(0.0, requires_grad=True)
+
         y, dt, embeddings = [], [], []  # outputs
         embed = frozenset(embed) if embed is not None else {-1}
         max_idx = max(embed)
+        layer_idx = 0
+
         for m in self.model:
+            layer_idx = layer_idx +1
             if m.f != -1:  # if not from previous layer
                 x = y[m.f] if isinstance(m.f, int) else [x if j == -1 else y[j] for j in m.f]  # from earlier layers
+                if x_aug is not None and layer_idx<10:
+                    x_aug = y_aug[m.f] if isinstance(m.f, int) else [x_aug if j == -1 else y_aug[j] for j in m.f]  # from earlier layers
             if profile:
                 self._profile_one_layer(m, x, dt)
-            x = m(x)  # run
-            y.append(x if m.i in self.save else None)  # save output
+
+            if x_aug is not None:
+                if type(m).__name__ == 'FDM':
+                    F_inv_rgb, F_var_rgb = m(x)
+                    m.current_mode = "inf"
+                    F_inv_inf, F_var_inf = m(x_aug)
+
+                    # 计算损失
+                    triple_loss = compute_triple_loss(F_inv_rgb, F_inv_inf, F_var_rgb, F_var_inf)
+                    # entropy_loss = compute_entropy_loss(F_inv_rgb, F_inv_inf, F_var_rgb, F_var_inf, self.entropy_head)
+
+                    tloss_feature_consistency = triple_loss + tloss_feature_consistency
+                    x_aug = F_inv_inf
+                    x = F_inv_rgb
+
+                    y_aug.append(x_aug)
+                    y.append(x if m.i in self.save else None)  # save output
+
+                elif type(m).__name__ == 'SimpleConsistencyFusion':
+                    fusion_result = m(x, x_aug)
+                    x = fusion_result
+                    y.append(x if m.i in self.save else None)  # save output
+
+                elif layer_idx < 13:
+                    x_aug = m(x_aug)
+                    x = m(x)
+
+                    y_aug.append(x_aug)
+                    y.append(x if m.i in self.save else None)  # save output
+                else:
+                    x = m(x)
+
+                    y.append(x if m.i in self.save else None)  # save output
+
+                # visualize_feature_map(x[1:2], title="Single Channel", single_channel_idx=0)
+
+            else:
+                if type(m).__name__ == 'SimpleConsistencyFusion':
+                    fusion_result = m(x, x)
+                    x = fusion_result
+                else:
+                    x = m(x)  # run
+                if type(m).__name__ == 'FDM':
+                    # visualize_feature_map(x[0][:1], title="Single Channel", single_channel_idx=0)
+                    # visualize_feature_map(x[1][:1], title="Single Channel", single_channel_idx=0)
+                    x = x[0]
+                y.append(x if m.i in self.save else None)  # save output
+                # if layer_idx<=10:
+                #     visualize_feature_map(x[:1], title="Single Channel", single_channel_idx=0)
+
+
+
             if visualize:
                 feature_visualization(x, m.type, m.i, save_dir=visualize)
             if m.i in embed:
-                embeddings.append(torch.nn.functional.adaptive_avg_pool2d(x, (1, 1)).squeeze(-1).squeeze(-1))  # flatten
+                embeddings.append(
+                    torch.nn.functional.adaptive_avg_pool2d(x, (1, 1)).squeeze(-1).squeeze(-1))  # flatten
                 if m.i == max_idx:
                     return torch.unbind(torch.cat(embeddings, 1), dim=0)
+        if x_aug is not None:
+            if self.training:
+                return [x, tloss_feature_consistency]
+            else:
+                return x
         return x
 
     def _predict_augment(self, x):
@@ -324,7 +401,7 @@ class BaseModel(torch.nn.Module):
         if verbose:
             LOGGER.info(f"Transferred {len_updated_csd}/{len(self.model.state_dict())} items from pretrained weights")
 
-    def loss(self, batch, preds=None):
+    def loss(self, batch, preds=None, loss_feature_consistency_loss=None):
         """
         Compute loss.
 
@@ -335,11 +412,36 @@ class BaseModel(torch.nn.Module):
         if getattr(self, "criterion", None) is None:
             self.criterion = self.init_criterion()
 
-        if preds is None:
+        if preds is None:   #在这个地方将进行完整的训练
+            loss_feature_consistency_loss = None
             transform_image = self.preprocess(batch["img"])
-            batch["img"] = transform_image
-            preds = self.forward(batch["img"])
-        return self.criterion(preds, batch)
+            # 定义保存路径
+            # save_dir = 'D:/A_my_study/visdrone/train/daytime/saved_images'
+            # os.makedirs(save_dir, exist_ok=True)
+            #
+            # # 定义将张量转换为PIL图像的变换
+            # to_pil = transforms.ToPILImage()
+            #
+            # # 遍历每个图像并保存
+            # for idx in range(transform_image.shape[0]):
+            #     img_tensor = transform_image[idx]  # 获取单个图像张量 (3, 640, 640)
+            #     img_pil = to_pil(img_tensor.cpu())  # 转换为 PIL 图像
+            #
+            #     # 构建保存路径和文件名
+            #     save_path = os.path.join(save_dir, f'image_{idx + 1}.png')
+            #
+            #     # 保存图像
+            #     img_pil.save(save_path)
+            compose_image = [batch["img"], transform_image]
+            # batch["img"] = transform_image
+            preds= self.forward(compose_image)
+            if isinstance(preds,list):
+                temp, loss_feature_consistency_loss = preds[0], preds[1]
+                preds = temp
+        # if loss_feature_consistency_loss==None:
+        #     return self.criterion(preds, batch)
+        # else:
+        return self.criterion(preds, batch) #, loss_feature_consistency_loss)
 
     def init_criterion(self):
         """Initialize the loss criterion for the BaseModel."""
@@ -404,6 +506,7 @@ class DetectionModel(BaseModel):
         self.inplace = self.yaml.get("inplace", True)
         self.end2end = getattr(self.model[-1], "end2end", False)
         self.preprocess = style_transform()
+        self.entropy_head = EntropyHead(in_channels=256, num_classes=5)
 
         # Build strides
         m = self.model[-1]  # Detect()
@@ -1346,9 +1449,9 @@ def temporary_modules(modules=None, attributes=None):
         attributes (dict, optional): A dictionary mapping old module attributes to new module attributes.
 
     Examples:
-        >>> with temporary_modules({"old.module": "new.module"}, {"old.module.attribute": "new.module.attribute"}):
-        >>> import old.module  # this will now import new.module
-        >>> from old.module import attribute  # this will now import new.module.attribute
+        # >>> with temporary_modules({"old.module": "new.module"}, {"old.module.attribute": "new.module.attribute"}):
+        # >>> import old.module  # this will now import new.module
+        # >>> from old.module import attribute  # this will now import new.module.attribute
 
     Note:
         The changes are only in effect inside the context manager and are undone once the context manager exits.
@@ -1614,7 +1717,14 @@ def parse_model(d, ch, verbose=True):
             SCDown,
             C2fCIB,
             A2C2f,
-            style_transform
+            Downsample,
+            SPDConv,
+            Dual_Grad_SPD,
+            domain_agnostic,
+            style_transform,
+            FDM,
+            SimpleConsistencyFusion,
+            SPD_CBAM_Block
         }
     )
     repeat_modules = frozenset(  # modules with 'repeat' arguments
@@ -1651,11 +1761,16 @@ def parse_model(d, ch, verbose=True):
         n = n_ = max(round(n * depth), 1) if n > 1 else n  # depth gain
         if m in base_modules:
             c1, c2 = ch[f], args[0]
-            if c2 != nc:  # if c2 not equal to number of classes (i.e. for Classify() output)
+
+            if m == style_transform:
+                pass
+            elif c2 != nc:  # if c2 not equal to number of classes (i.e. for Classify() output)
                 c2 = make_divisible(min(c2, max_channels) * width, 8)
             if m is C2fAttn:  # set 1) embed channels and 2) num heads
                 args[1] = make_divisible(min(args[1], max_channels // 2) * width, 8)
                 args[2] = int(max(round(min(args[2], max_channels // 2 // 32)) * width, 1) if args[2] > 1 else args[2])
+
+
 
             args = [c1, c2, *args[1:]]
             if m in repeat_modules:

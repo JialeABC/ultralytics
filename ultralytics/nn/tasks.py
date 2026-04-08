@@ -19,8 +19,8 @@ from torchvision import transforms
 import os
 from ultralytics.nn.extra_modules.domain_generalization import compute_triple_loss, compute_entropy_loss
 
-from ultralytics.nn.extra_modules.block import Downsample,SPDConv,Dual_Grad_SPD
-from ultralytics.nn.extra_modules.domain_generalization import domain_agnostic, style_transform,FDM, SPD_CBAM_Block
+from ultralytics.nn.extra_modules.block import Downsample, Dual_Grad_SPD
+from ultralytics.nn.extra_modules.domain_generalization import domain_agnostic, style_transform,FDM, SPD_CBAM_Block, SPDConv
 from ultralytics.nn.modules import (
     AIFI,
     C1,

@@ -1,118 +1,62 @@
 # Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
 
-# COCO 2017 dataset https://cocodataset.org by Microsoft
-# Documentation: https://docs.ultralytics.com/datasets/detect/coco/
-# Example usage: yolo train data=coco.yaml
+# COCO8 dataset (first 8 images from COCO train2017) by Ultralytics
+# Documentation: https://docs.ultralytics.com/datasets/detect/coco8/
+# Example usage: yolo train data=coco8.yaml
 # parent
 # ├── ultralytics
 # └── datasets
-#     └── coco ← downloads here (20.1 GB)
+#     └── coco8 ← downloads here (1 MB)
 
 # Train/val/test sets as 1) dir: path/to/imgs, 2) file: path/to/imgs.txt, or 3) list: [path/to/imgs1, path/to/imgs2, ..]
-path: coco # dataset root dir
-train: train2017.txt # train images (relative to 'path') 118287 images
-val: val2017.txt # val images (relative to 'path') 5000 images
-test: test-dev2017.txt # 20288 of 40670 images, submit to https://competitions.codalab.org/competitions/20794
+path: D:/ckp/data/data1 # dataset root dir
+train: train.txt # train images (relative to 'path') 4 images
+val: val.txt # val images (relative to 'path') 4 images
+test: # test images (optional)
 
 # Classes
+#names:
+#  0: car
+#  1: truck
+#  2: bus
+#  3: van
+#  4: freight_car
 names:
-  0: person
-  1: bicycle
-  2: car
-  3: motorcycle
-  4: airplane
-  5: bus
-  6: train
-  7: truck
-  8: boat
-  9: traffic light
-  10: fire hydrant
-  11: stop sign
-  12: parking meter
-  13: bench
-  14: bird
-  15: cat
-  16: dog
-  17: horse
-  18: sheep
-  19: cow
-  20: elephant
-  21: bear
-  22: zebra
-  23: giraffe
-  24: backpack
-  25: umbrella
-  26: handbag
-  27: tie
-  28: suitcase
-  29: frisbee
-  30: skis
-  31: snowboard
-  32: sports ball
-  33: kite
-  34: baseball bat
-  35: baseball glove
-  36: skateboard
-  37: surfboard
-  38: tennis racket
-  39: bottle
-  40: wine glass
-  41: cup
-  42: fork
-  43: knife
-  44: spoon
-  45: bowl
-  46: banana
-  47: apple
-  48: sandwich
-  49: orange
-  50: broccoli
-  51: carrot
-  52: hot dog
-  53: pizza
-  54: donut
-  55: cake
-  56: chair
-  57: couch
-  58: potted plant
-  59: bed
-  60: dining table
-  61: toilet
-  62: tv
-  63: laptop
-  64: mouse
-  65: remote
-  66: keyboard
-  67: cell phone
-  68: microwave
-  69: oven
-  70: toaster
-  71: sink
-  72: refrigerator
-  73: book
-  74: clock
-  75: vase
-  76: scissors
-  77: teddy bear
-  78: hair drier
-  79: toothbrush
+  0: E4B
+  1: B-1B
+  2: B-52
+  3: C-5
+  4: C-17A
+  5: C-130
+  6: KC-135
+  7: KC-10
+  8: F-22
+  9: E-3
+  10: others
+  11: KC46A
+  12: V22
+  13: F-15
+  14: F-16
+  15: F/A-18
+  16: F-35
+  17: E-6
+  18: E-8
+  19: P-3
+  20: p-3
+  21: SU-24
+  22: SU-27
+  23: SU-30
+  24: SU-33
+  25: SU-34
+  26: SU-35
+  27: TU-22
+  28: TU-95
+  29: TU-160
+  30: SU-95
+  31: C-141
+  32: TU-33
 
-# Download script/URL (optional)
-download: |
-  from pathlib import Path
 
-  from ultralytics.utils import ASSETS_URL
-  from ultralytics.utils.downloads import download
-
-  # Download labels
-  segments = True  # segment or box labels
-  dir = Path(yaml["path"])  # dataset root dir
-  urls = [ASSETS_URL + ("/coco2017labels-segments.zip" if segments else "/coco2017labels.zip")]  # labels
-  download(urls, dir=dir.parent)
-  # Download data
-  urls = [
-      "http://images.cocodataset.org/zips/train2017.zip",  # 19G, 118k images
-      "http://images.cocodataset.org/zips/val2017.zip",  # 1G, 5k images
-      "http://images.cocodataset.org/zips/test2017.zip",  # 7G, 41k images (optional)
-  ]
-  download(urls, dir=dir / "images", threads=3)
+  names: [ 'E4B': 0,'B-1B': 1, 'B-52': 2, 'C-5': 3, 'C-17A': 4, 'C-130': 5, 'KC-135': 6, 'KC-10': 7, 'F-22': 8,'E-3': 9,'others': 10,
+           'KC46A': 11,'V22': 12,'F-15': 13,'F-16': 14,'F/A-18': 15,'F-35': 16,'E-6': 17,'E-8': 18,'P-3': 19,'p-3': 19,'SU-24': 20,'SU-27': 21,
+           'SU-30': 22,'SU-33': 23,'SU-34': 24, 'SU-35': 25, 'TU-22': 26, 'TU-95': 27, 'TU-160': 28,'SU-95': 29,'C-141': 30,'TU-33': 32 ]

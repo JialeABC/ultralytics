@@ -8,6 +8,7 @@ import kornia
 import matplotlib.pyplot as plt
 import numpy as np
 from torchvision.utils import make_grid
+from ultralytics.nn.modules.conv import Conv2
 
 
 class DWT(nn.Module):
@@ -685,19 +686,28 @@ class SimpleConsistencyFusion(nn.Module):
         return out
 
 #==========================================================上面是特征融合===============================================================#
-
 class SpaceToDepth(nn.Module):
-    def __init__(self, block_size=2):
+    def __init__(self, inchannels, outchannels, block_size=2):
         super(SpaceToDepth, self).__init__()
         self.block_size = block_size
 
+        # 计算 SpaceToDepth 之后的通道倍率 (k^2)
+        # 例如 block_size=2, factor=4
+        factor = block_size ** 2
+
+        # 修正：卷积层的输入通道应该是 原始通道 * 倍率
+        self.conv = nn.Conv2d(inchannels * factor, outchannels, 1, bias=False)
+
     def forward(self, x):
         N, C, H, W = x.size()
-        # Reshape: [N, C, H//bs, bs, W//bs, bs]
+
+        # SpaceToDepth 操作
         x = x.view(N, C, H // self.block_size, self.block_size, W // self.block_size, self.block_size)
-        # Transpose and merge to channel dimension
         x = x.permute(0, 3, 5, 1, 2, 4).contiguous()
         x = x.view(N, C * (self.block_size ** 2), H // self.block_size, W // self.block_size)
+
+        # 此时 x 的通道数是 C * 4，与 self.conv 的定义 (inchannels * 4) 匹配
+        x = self.conv(x)
         return x
 
 
@@ -816,6 +826,27 @@ def visualize_feature_map(feature_map, title="Feature Map", single_channel_idx=N
         plt.axis('off')
 
     plt.show()
+
+class SPDConv(nn.Module):
+    def __init__(self,in_channels,out_channels,kernel_size,stride):
+        super(SPDConv,self).__init__()
+        self.spd_conv = SpaceToDepth(in_channels,out_channels, block_size=2)
+        self.conv = nn.Conv2d(in_channels=in_channels,out_channels=out_channels,kernel_size=3, stride=2, padding=1, bias=False)
+
+    def forward(self,x):
+        x1 = self.spd_conv(x)
+        x2 = self.conv(x)
+        output = x1 + x2
+        return output
+class GA_Concat(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super(GA_Concat, self).__init__()
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=1)
+        self.sigmoid = nn.Sigmoid()
+        self.relu = nn.ReLU()
+
+    def forward(self,x):
+        pass
 
 
 

@@ -20,7 +20,7 @@ import os
 from ultralytics.nn.extra_modules.domain_generalization import compute_triple_loss, compute_entropy_loss
 
 from ultralytics.nn.extra_modules.block import Downsample, Dual_Grad_SPD
-from ultralytics.nn.extra_modules.domain_generalization import domain_agnostic, style_transform,FDM, SPD_CBAM_Block, SPDConv
+from ultralytics.nn.extra_modules.domain_generalization import domain_agnostic, style_transform,FDM, SPD_CBAM_Block, SPDConv, GA_Concat
 from ultralytics.nn.modules import (
     AIFI,
     C1,
@@ -1724,7 +1724,8 @@ def parse_model(d, ch, verbose=True):
             style_transform,
             FDM,
             SimpleConsistencyFusion,
-            SPD_CBAM_Block
+            SPD_CBAM_Block,
+
         }
     )
     repeat_modules = frozenset(  # modules with 'repeat' arguments
@@ -1798,6 +1799,10 @@ def parse_model(d, ch, verbose=True):
             c2 = args[1] if args[3] else args[1] * 4
         elif m is torch.nn.BatchNorm2d:
             args = [ch[f]]
+        elif m is GA_Concat:
+            c1 = ch[f[-1]]  # deep_feature 的通道数
+            # c2 = c1  # 输出通道数 = deep_feature 通道数
+            args = [c1]
         elif m is Concat:
             c2 = sum(ch[x] for x in f)
         elif m in frozenset(

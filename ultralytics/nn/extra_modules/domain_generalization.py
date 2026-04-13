@@ -710,7 +710,6 @@ class SpaceToDepth(nn.Module):
         x = self.conv(x)
         return x
 
-
 class CAM(nn.Module):
     def __init__(self, channels, reduction_ratio=16):
         super(CAM, self).__init__()
@@ -722,13 +721,23 @@ class CAM(nn.Module):
             nn.ReLU(inplace=True),
             nn.Conv2d(channels // reduction_ratio, channels, 1, bias=False)
         )
+
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
+        # 通道注意力: [B, C, 1, 1]
         avg_out = self.fc(self.avg_pool(x))
         max_out = self.fc(self.max_pool(x))
         out = avg_out + max_out
-        return x * self.sigmoid(out)
+        channel_attn = self.sigmoid(out)   # [B, C, 1, 1]
+
+        # 扩展到空间维度: [B, C, H, W]
+        channel_attn = channel_attn.expand(-1, -1, x.size(2), x.size(3))
+
+        # 压缩成单通道: [B, 1, H, W]
+        attn_map = torch.mean(channel_attn, dim=1, keepdim=True)
+
+        return attn_map
 
 
 class SAM(nn.Module):
@@ -745,7 +754,7 @@ class SAM(nn.Module):
         max_out, _ = torch.max(x, dim=1, keepdim=True)  # [B, 1, H, W]
         x_cat = torch.cat([avg_out, max_out], dim=1)  # [B, 2, H, W]
         out = self.conv(x_cat)  # [B, 1, H, W]
-        return x * self.sigmoid(out)
+        return out
 
 
 class SPD_CBAM_Block(nn.Module):
@@ -839,15 +848,27 @@ class SPDConv(nn.Module):
         output = x1 + x2
         return output
 class GA_Concat(nn.Module):
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, channels):
         super(GA_Concat, self).__init__()
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=1)
-        self.sigmoid = nn.Sigmoid()
-        self.relu = nn.ReLU()
+        self.cam = CAM(channels=channels)
+        self.sam = SAM()
 
-    def forward(self,x):
-        pass
+    def forward(self, x):
+        deep_feature, shallow_feature = x[0], x[1]
 
+        # 保证 deep_feature 通道数可以被 2 整除
+        assert deep_feature.shape[1] % 2 == 0, \
+            f"deep_feature channels must be even, but got {deep_feature.shape[1]}"
+
+        cam_x = self.cam(shallow_feature)
+        sam_x = self.sam(shallow_feature)
+
+        feat1, feat2 = torch.chunk(deep_feature, 2, dim=1)
+        output1 = cam_x * feat1
+        output2 = sam_x * feat2
+        output = torch.cat([output1, output2], dim=1)
+
+        return output
 
 
 

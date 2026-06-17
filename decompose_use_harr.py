@@ -118,54 +118,54 @@ def find_content_bbox(img_np, white_threshold=250):
 
     return y1, y2, x1, x2
 #==========================================以下仅仅是分解==============================================#
-# def load_image(image_path, transform=None):
-#     """Load and preprocess the image."""
-#     img = Image.open(image_path) #.convert('L')  # Convert to grayscale
-#     if transform:
-#         img = transform(img)
-#     return img.unsqueeze(0)  # Add batch dimension
-#
-# transform = transforms.Compose([
-#     transforms.Resize((256, 256)),  # Resize for simplicity
-#     transforms.ToTensor(),
-# ])
-#
-# image_path = 'D:/A_my_study/visdrone/train/daytime/images_rgb1/00233.jpg'  # 替换成你的图片路径
-# img_tensor = load_image(image_path, transform=transform)
-#
-# # Initialize DWT with Haar wavelet
-# dwt = DWT(wavelet='haar')
-#
-# # Apply DWT on the input image tensor
-# ll, lh, hl, hh = dwt(img_tensor)
-#
-# # Convert tensors back to images for visualization
-# to_pil = transforms.ToPILImage()
-#
-# fig, ax = plt.subplots(2, 2, figsize=(8, 8))
-#
-# ax[0, 0].imshow(to_pil(img_tensor.squeeze().cpu()), cmap='gray')
-# ax[0, 0].set_title('Original Image')
-# ax[0, 0].axis('off')
-#
-# ax[0, 1].imshow(to_pil(ll.squeeze().cpu()), cmap='gray')
-# ax[0, 1].set_title('LL (Approximation)')
-# ax[0, 1].axis('off')
-#
-# ax[1, 0].imshow(to_pil(lh.squeeze().cpu()), cmap='gray')
-# ax[1, 0].set_title('LH (Horizontal Detail)')
-# ax[1, 0].axis('off')
-#
-# ax[1, 1].imshow(to_pil(hl.squeeze().cpu()), cmap='gray')
-# ax[1, 1].set_title('HL (Vertical Detail)')
-# ax[1, 1].axis('off')
-#
-# plt.figure(figsize=(5, 5))
-# plt.imshow(to_pil(hh.squeeze().cpu()), cmap='gray')
-# plt.title('HH (Diagonal Detail)')
-# plt.axis('off')
-#
-# plt.show()
+def load_image(image_path, transform=None):
+    """Load and preprocess the image."""
+    img = Image.open(image_path) #.convert('L')  # Convert to grayscale
+    if transform:
+        img = transform(img)
+    return img.unsqueeze(0)  # Add batch dimension
+
+transform = transforms.Compose([
+    transforms.Resize((256, 256)),  # Resize for simplicity
+    transforms.ToTensor(),
+])
+
+image_path = 'D:/A_my_study/minyong/vis/all/images/DJI_20260416151632_0001_V_00193.jpg'  # 替换成你的图片路径
+img_tensor = load_image(image_path, transform=transform)
+
+# Initialize DWT with Haar wavelet
+dwt = DWT(wavelet='haar')
+
+# Apply DWT on the input image tensor
+ll, lh, hl, hh = dwt(img_tensor)
+
+# Convert tensors back to images for visualization
+to_pil = transforms.ToPILImage()
+
+fig, ax = plt.subplots(2, 2, figsize=(8, 8))
+
+ax[0, 0].imshow(to_pil(img_tensor.squeeze().cpu()), cmap='gray')
+ax[0, 0].set_title('Original Image')
+ax[0, 0].axis('off')
+
+ax[0, 1].imshow(to_pil(ll.squeeze().cpu()), cmap='gray')
+ax[0, 1].set_title('LL (Approximation)')
+ax[0, 1].axis('off')
+
+ax[1, 0].imshow(to_pil(lh.squeeze().cpu()), cmap='gray')
+ax[1, 0].set_title('LH (Horizontal Detail)')
+ax[1, 0].axis('off')
+
+ax[1, 1].imshow(to_pil(hl.squeeze().cpu()), cmap='gray')
+ax[1, 1].set_title('HL (Vertical Detail)')
+ax[1, 1].axis('off')
+
+plt.figure(figsize=(5, 5))
+plt.imshow(to_pil(hh.squeeze().cpu()), cmap='gray')
+plt.title('HH (Diagonal Detail)')
+plt.axis('off')
+
+plt.show()
 
 #======================================对高频分量HH,HL,LH,LL抑制===========================================#
 # def load_image(image_path, transform=None):
@@ -280,22 +280,7 @@ def visualize_ll_before_after(original_ll, perturbed_ll, bbox=None, channel_idx=
 
 
 # ------------------ 示例使用 ------------------
-if __name__ == "__main__":
-    # 模拟一张带白边的图像（例如 256x256，中间 200x200 是内容）
-    H, W = 256, 256
-    content = np.random.rand(200, 200) * 200 + 30  # 非白内容 [30, 230]
-    img = np.ones((H, W)) * 255  # 白背景
-    img[28:228, 28:228] = content  # 居中放置内容
-
-    # 转为 tensor [1, 1, H, W]
-    x = torch.from_numpy(img).float().unsqueeze(0).unsqueeze(0)
-
-    # DWT 分解
-    dwt = DWT()
-    ll, lh, hl, hh = dwt(x)
-
-    # 仅对有效区域扰动 LL
-    ll_perturbed, bbox = perturb_ll_in_content_region(ll, white_threshold=240)
-
-    # 可视化
-    visualize_ll_before_after(ll, ll_perturbed, bbox=bbox)
+# if __name__ == "__main__":
+#     # 模拟一张带白边的图像（例如 256x256，中间 200x200 是内容）
+#     image_path = 'D:/A_my_study/visdrone/train/daytime/images_rgb1/00233.jpg'
+#     visualize_dwt_components(image_path)

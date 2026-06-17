@@ -247,8 +247,8 @@ class BaseModel(torch.nn.Module):
                     x = fusion_result
                 else:
                     x = m(x)  # run
-                if type(m).__name__ == 'FDM':
-                    F_inv_rgb, F_var_rgb = x[0],x[1]
+                if type(m).__name__ == 'FDM':   ####这个地方用来推理时可视化FD,下面的注释掉就能可视化了
+                    F_inv_rgb, F_var_rgb = x[0],x[1]   # 下面这个代码是给推理时可视化用的
                     # feature_visualization(F_inv_rgb, m.type, m.i, save_dir=Path("runs/detect/exp_inv"))
                     # feature_visualization(F_var_rgb, m.type, m.i, save_dir=Path("runs/detect/exp_var"))
                     # visualize_feature_map(x[0][:1], title="Single Channel", single_channel_idx=0)

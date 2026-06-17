@@ -73,8 +73,9 @@ def find_content_bbox(img, white_threshold=250):
 # ----------------------------
 if __name__ == "__main__":
     # 1. 读取图像（替换为你自己的路径）
-    image_path = "D:/A_my_study/visdrone/train/daytime/images_rgb1/00363.jpg"  # ←← 修改这里！
-
+    image_path = "D:/A_my_study/minyong/vis/all/images/DJI_20260416151632_0001_V_00091.jpg"  # ←← 修改这里！
+    # DJI_20260416151632_0001_V_00193
+    # DJI_20260416151632_0001_V_00091
     img = Image.open(image_path)  # 保持RGB格式
     img_np = np.array(img, dtype=np.float32)
 
